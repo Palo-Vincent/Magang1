@@ -1,0 +1,58 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class Loan extends Model
+{
+    use SoftDeletes;
+
+    protected $fillable = [
+        'user_id',
+        'item_id',
+        'quantity',
+        'loan_date',
+        'due_date',
+        'status',
+        'verified_by',
+        'verified_at',
+        'rejection_note',
+    ];
+
+    protected $casts = [
+        'loan_date' => 'date',
+        'due_date' => 'date',
+        'verified_at' => 'datetime',
+    ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class)->withTrashed();
+    }
+
+    public function item(): BelongsTo
+    {
+        return $this->belongsTo(Item::class)->withTrashed();
+    }
+
+    public function verifier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'verified_by')->withTrashed();
+    }
+
+    public function returnLog(): HasOne
+    {
+        return $this->hasOne(ReturnLog::class);
+    }
+
+    public static function markOverdue(): int
+    {
+        return static::where('status', 'dipinjam')
+            ->whereDate('due_date', '<', today())
+            ->update(['status' => 'terlambat']);
+    }
+}
